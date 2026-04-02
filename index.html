@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Barcode Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.98);
+            padding: 35px 30px 40px 30px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3), 0 5px 15px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 480px;
+            transition: transform 0.3s ease;
+        }
+
+        .container:hover {
+            transform: translateY(-5px);
+        }
+
+        h2 {
+            color: #1a1a2e;
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 25px;
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .input-group {
+            margin-bottom: 22px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 14px;
+            letter-spacing: 0.3px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            box-sizing: border-box;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            background: #f8fafc;
+            font-family: 'Courier New', monospace;
+            font-weight: 500;
+        }
+
+        input:focus {
+            border-color: #667eea;
+            outline: none;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        input::placeholder {
+            color: #a0aec0;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            font-weight: normal;
+        }
+
+        .hint {
+            font-size: 12px;
+            color: #718096;
+            margin-top: 8px;
+            margin-bottom: 15px;
+            padding: 8px 12px;
+            background: #f7fafc;
+            border-radius: 8px;
+            border-left: 3px solid #667eea;
+            line-height: 1.4;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        button:hover {
+            background: linear-gradient(135deg, #5a67d8 0%, #6b46a0 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        /* Animasi fade in untuk container */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .container {
+            animation: fadeIn 0.5s ease-out;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>✨ Batch Barcode ✨</h2>
+    <div class="input-group">
+        <label>📦 Kode Awal</label>
+        <input type="text" id="startCode" placeholder="Contoh: TI000001">
+    </div>
+    <div class="input-group">
+        <label>🎯 Kode Akhir</label>
+        <input type="text" id="endCode" placeholder="Contoh: TI000150">
+    </div>
+    <p class="hint">💡 Sistem akan otomatis mendeteksi prefix (TI, IM, dll) dan jumlah digit angka.</p>
+    <button onclick="processAndOpen()">🚀 Buka Preview & Download PDF</button>
+</div>
+
+<script>
+    function processAndOpen() {
+        const startVal = document.getElementById('startCode').value.trim();
+        const endVal = document.getElementById('endCode').value.trim();
+
+        if (!startVal || !endVal) {
+            alert("Harap isi kode awal dan akhir!");
+            return;
+        }
+
+        // Logika Regex: Memisahkan Huruf (Prefix) dan Angka
+        const regex = /^([a-zA-Z]+)(\d+)$/;
+        const matchStart = startVal.match(regex);
+        const matchEnd = endVal.match(regex);
+
+        if (!matchStart || !matchEnd || matchStart[1] !== matchEnd[1]) {
+            alert("Format kode tidak valid atau prefix tidak sama! (Contoh benar: TI001 ke TI100)");
+            return;
+        }
+
+        const prefix = matchStart[1];
+        const startNum = parseInt(matchStart[2]);
+        const endNum = parseInt(matchEnd[2]);
+        const digitCount = matchStart[2].length; // Menghitung jumlah digit (misal 000001 = 6 digit)
+
+        if (startNum > endNum) {
+            alert("Nomor awal tidak boleh lebih besar dari nomor akhir!");
+            return;
+        }
+
+        generatePreview(prefix, startNum, endNum, digitCount);
+    }
+
+    function generatePreview(prefix, start, end, digits) {
+        const printWindow = window.open('', '_blank');
+        
+        let barcodeHtml = '';
+        for (let i = start; i <= end; i++) {
+            // Padding otomatis sesuai jumlah digit inputan awal
+            let numStr = i.toString().padStart(digits, '0');
+            let fullCode = prefix + numStr;
+            barcodeHtml += `<div class="barcode-item"><svg id="bc-${fullCode}"></svg></div>`;
+        }
+
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>Preview Barcode ${prefix}</title>
+                <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script>
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\/script>
+                <style>
+                    body { font-family: sans-serif; padding: 20px; }
+                    .no-print { position: sticky; top: 0; background: white; padding: 15px; border-bottom: 2px solid #333; text-align: center; margin-bottom: 20px; z-index: 100; }
+                    #content { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; }
+                    .barcode-item { border: 1px solid #ccc; padding: 10px; display: flex; justify-content: center; align-items: center; }
+                    button { padding: 10px 20px; background: #28a745; color: white; border: none; cursor: pointer; font-size: 16px; border-radius: 5px; }
+                    @media print { .no-print { display: none; } }
+                </style>
+            </head>
+            <body>
+                <div class="no-print">
+                    <button onclick="window.print()">Cetak / Simpan PDF</button>
+                    <p>Total Barcode: ${end - start + 1}</p>
+                </div>
+                <div id="content">${barcodeHtml}</div>
+                <script>
+                    window.onload = function() {
+                        const svgs = document.querySelectorAll('svg');
+                        svgs.forEach(svg => {
+                            JsBarcode(svg, svg.id.replace('bc-', ''), {
+                                format: "CODE128",
+                                width: 1.5,
+                                height: 45,
+                                displayValue: true
+                            });
+                        });
+                    }
+                <\/script>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+    }
+</script>
+
+</body>
+</html>
